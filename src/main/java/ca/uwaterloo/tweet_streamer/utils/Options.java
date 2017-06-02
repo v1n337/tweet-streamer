@@ -18,8 +18,12 @@ public class Options
     @Option(name = "-help", usage = "Help", metaVar = "HELP")
     private Boolean help = false;
 
-    @Option(name = "-twitter-creds-filepath", usage = "Twitter Creds", required = true)
+    @Option(name = "-twitter-creds-filepath", usage = "Twitter Credential File", required = true)
     private String twitterCredentialsFilepath;
+
+    @Option(name = "-output-directory", usage = "Output Directory", required = true)
+    private String outputDirectory;
+
 
     public static void initializeInstance(String[] args)
         throws CmdLineException
@@ -51,7 +55,6 @@ public class Options
             System.exit(0);
         }
         parser.parseArgument(args);
-
 
         log.info("Options successfully read");
     }

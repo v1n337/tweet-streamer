@@ -3,6 +3,7 @@ package ca.uwaterloo.tweet_streamer;
 import ca.uwaterloo.tweet_streamer.processors.Processor;
 import ca.uwaterloo.tweet_streamer.processors.TweetStreamingProcessor;
 import ca.uwaterloo.tweet_streamer.utils.Options;
+import org.apache.log4j.BasicConfigurator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

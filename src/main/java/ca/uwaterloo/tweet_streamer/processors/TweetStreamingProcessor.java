@@ -12,14 +12,22 @@ import com.twitter.hbc.httpclient.auth.Authentication;
 import com.twitter.hbc.httpclient.auth.OAuth1;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import twitter4j.Status;
+import twitter4j.TwitterObjectFactory;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class TweetStreamingProcessor extends Processor
 {
     private Logger log = LogManager.getLogger(getClass());
+    private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
     @Override
     public void process()
@@ -32,11 +40,11 @@ public class TweetStreamingProcessor extends Processor
                 new File(Options.getInstance().getTwitterCredentialsFilepath()),
                 TwitterCredentials.class
             );
-        log.debug("twitterCredentials: " + twitterCredentials);
 
-        BlockingQueue<String> queue = new LinkedBlockingQueue<String>(10000);
+        BlockingQueue<String> queue = new LinkedBlockingQueue<>(Constants.TWITTER_QUEUE_SIZE);
         StatusesFilterEndpoint endpoint = new StatusesFilterEndpoint();
-        endpoint.trackTerms(Lists.newArrayList("twitterapi", "#yolo"));
+        endpoint.trackTerms(Lists.newArrayList("$"));
+        endpoint.languages(Lists.newArrayList("en"));
 
         Authentication auth =
             new OAuth1(
@@ -56,13 +64,34 @@ public class TweetStreamingProcessor extends Processor
         client.connect();
 
         // Do whatever needs to be done with messages
-        for (int msgRead = 0; msgRead < 1000; msgRead++) {
+
+        while (true)
+        {
             String msg = queue.take();
-            System.out.println(msg);
+            Status status = TwitterObjectFactory.createStatus(msg);
+
+            if (status.getSymbolEntities().length > 0)
+            {
+                log.debug("Writing tweet " + status.getId() + " to file");
+                writeToFile(
+                    status.getText().replace("\t", ""),
+                    status.getId(), status.getCreatedAt(), Options.getInstance().getOutputDirectory()
+                );
+            }
         }
+    }
 
-        client.stop();
+    private void writeToFile(String tweetText, Long tweetId, Date tweetTimestamp, String outputFolder)
+        throws IOException
+    {
+        String outputFilepath =
+            outputFolder + "/streamed_tweets_" + sdf.format(tweetTimestamp) + ".tsv";
+        File outputFile = new File(outputFilepath);
 
-        log.info("TweetStreamingProcessor completed");
+        FileWriter fw = new FileWriter(outputFile.getAbsoluteFile(), true);
+        BufferedWriter bw = new BufferedWriter(fw);
+        bw.write(tweetId + "\t" + tweetTimestamp.getTime() + "\t" + tweetText + "\n");
+        bw.close();
+        fw.close();
     }
 }
