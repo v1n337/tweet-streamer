@@ -18,7 +18,6 @@ import twitter4j.TwitterObjectFactory;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.BlockingQueue;
@@ -64,25 +63,32 @@ public class TweetStreamingProcessor extends Processor
         client.connect();
 
         // Do whatever needs to be done with messages
-
         while (true)
         {
-            String msg = queue.take();
-            Status status = TwitterObjectFactory.createStatus(msg);
-
-            if (status.getSymbolEntities().length > 0)
+            try
             {
-                log.debug("Writing tweet " + status.getId() + " to file");
-                writeToFile(
-                    status.getText().replace("\t", ""),
-                    status.getId(), status.getCreatedAt(), Options.getInstance().getOutputDirectory()
-                );
+                String msg = queue.take();
+                Status status = TwitterObjectFactory.createStatus(msg);
+
+                if (status.getSymbolEntities().length > 0)
+                {
+                    log.debug("Writing tweet " + status.getId() + " to file");
+                    writeToFile(
+                        status.getText().replace("\t", ""),
+                        status.getId(), status.getCreatedAt(), Options.getInstance().getOutputDirectory()
+                    );
+                }
+            }
+            catch (Exception e)
+            {
+                log.error("Skipped tweet ", e);
             }
         }
     }
 
-    private void writeToFile(String tweetText, Long tweetId, Date tweetTimestamp, String outputFolder)
-        throws IOException
+    private void writeToFile(String tweetText, Long tweetId, Date tweetTimestamp,
+                             String outputFolder)
+        throws Exception
     {
         String outputFilepath =
             outputFolder + "/streamed_tweets_" + sdf.format(tweetTimestamp) + ".tsv";
