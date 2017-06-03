@@ -74,8 +74,12 @@ public class TweetStreamingProcessor extends Processor
                 {
                     log.debug("Writing tweet " + status.getId() + " to file");
                     writeToFile(
-                        status.getText().replace("\t", ""),
-                        status.getId(), status.getCreatedAt(), Options.getInstance().getOutputDirectory()
+                        status.getText()
+                            .replace("\t", " ")
+                            .replace("\n", " ")
+                            .replace("\r", " "),
+                        status.getId(), status.getCreatedAt(),
+                        Options.getInstance().getOutputDirectory()
                     );
                 }
             }
